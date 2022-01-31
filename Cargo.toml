@@ -1,0 +1,9 @@
+[package]
+name = "zhscript2-no-std"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+cortex-m-semihosting = "0.3.3"
+spin = "0.7"
+lazy_static = { version = "1.4", features = ["spin_no_std"] }
