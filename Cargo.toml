@@ -3,7 +3,11 @@ name = "zhscript2-no-std"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+default = ["cortex-m-semihosting", "spin", "lazy_static"]
+no = []
+
 [dependencies]
-cortex-m-semihosting = "0.3.3"
-spin = "0.7"
-lazy_static = { version = "1.4", features = ["spin_no_std"] }
+cortex-m-semihosting = { version = "0.3.3", optional = true }
+spin = { version = "0.7", optional = true }
+lazy_static = { version = "1.4", features = ["spin_no_std"], optional = true }

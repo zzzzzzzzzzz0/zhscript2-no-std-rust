@@ -1,13 +1,27 @@
-#![no_std]
+#![cfg_attr(not(feature = "no"), no_std)]
 
+#[cfg(not(feature = "no"))]
 extern crate alloc;
 
+#[cfg(not(feature = "no"))]
 use alloc::{string::{String, ToString}, vec, vec::Vec, boxed::Box, sync::Arc};
 
+#[cfg(feature = "no")]
+use std::sync::Arc;
+
+#[cfg(not(feature = "no"))]
 #[macro_export]
 macro_rules! pr__ {
 	($($arg:tt)*) => (
 		cortex_m_semihosting::hprint!($($arg)*).unwrap();
+	)
+}
+
+#[cfg(feature = "no")]
+#[macro_export]
+macro_rules! pr__ {
+	($($arg:tt)*) => (
+		print!($($arg)*);
 	)
 }
 
@@ -43,6 +57,7 @@ pub struct Codes_ {
 }
 
 pub mod world_ {
+	#[cfg(not(feature = "no"))]
 	use alloc::{string::String, vec};
 	use super::{*};
 
@@ -353,6 +368,7 @@ pub mod world_ {
 }
 
 mod pars_ {
+	#[cfg(not(feature = "no"))]
 	use alloc::{string::String, vec, vec::Vec, boxed::Box, };
 	use super::{*};
 
@@ -791,7 +807,7 @@ fn tree2__(codes:&Vec<CI_>, mut suojin:i32, tag:Option<&str>, mut eoe0:bool) {
 	suojin += 1;
 	for (idx, i) in codes.iter().enumerate() {
 		let eoe = idx == codes.len() - 1;
-		pr__!(match suojin {
+		pr__!("{}", match suojin {
 			0 if codes.len() == 1 => {eoe0 = true; "< "}
 			0 if eoe => {eoe0 = true; r"\ "}
 			0 if idx == 0 => "/ ",
