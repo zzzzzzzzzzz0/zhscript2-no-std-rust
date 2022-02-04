@@ -5,9 +5,9 @@ extern crate alloc;
 
 #[cfg(not(feature = "no"))]
 use alloc::{string::{String, ToString}, vec, vec::Vec, boxed::Box, sync::Arc};
-
 #[cfg(feature = "no")]
 use std::sync::Arc;
+use core::any::Any;
 
 #[cfg(not(feature = "no"))]
 #[macro_export]
@@ -28,25 +28,10 @@ macro_rules! pr__ {
 pub trait CodeImpl_ {
 	fn kw__(&self) -> Vec<Keyword_>;
 	fn s__(&self) -> Option<&str> {None}
-	fn s2__(&self) -> Option<&str> {None}
-	fn opt__(&self) -> &Option<Codes_> {&None}
-	fn opt2__(&self) -> &Option<Codes_> {&None}
-	fn opt3__(&self) -> &Option<Codes_> {&None}
 	fn a__(&self) -> &Option<Codes_> {&None}
 	fn mv_a__(&self) -> Option<Codes_> {None}
-	fn a2__(&self) -> &Option<Codes_> {&None}
-	fn aa__(&self) -> &Option<Vec<Codes_>> {&None}
-	fn aa2__(&self) -> &Option<Vec<Codes_>> {&None}
-
-	fn optag__(&self) -> Option<&str> {None}
-	fn optag2__(&self) -> Option<&str> {None}
-	fn optag3__(&self) -> Option<&str> {None}
 	fn a_tag__(&self) -> Option<&str> {None}
-	fn a2_tag__(&self) -> Option<&str> {None}
-	fn aa_tag__(&self) -> Option<&str> {None}
-	fn aa2_tag__(&self) -> Option<&str> {None}
-
-	fn s_to__(&mut self, _s:String) {}
+	fn as_any(&self) -> &dyn Any;
 }
 type CI_ = Arc<Box<dyn CodeImpl_>>;
 fn new_ci__(i:Box<dyn CodeImpl_>) -> CI_ {Arc::new(i)}
@@ -109,7 +94,8 @@ pub mod world_ {
 					if ret != Return_::Ok {return ret}
 				}
 				Keyword_::For(_) => {
-					let mut cnt = if let Some((ret, v)) = for21(qu, i.opt2__()) {
+					let i = i.as_any().downcast_ref::<for_::Item_>().unwrap();
+					let mut cnt = if let Some((ret, v)) = for21(qu, &i.start_) {
 						if ret != Return_::Ok {return ret}
 						if !v.is_empty() {
 							let u = &v[0];
@@ -118,7 +104,7 @@ pub mod world_ {
 							} else {return Return_::Err(["for start ", u].concat())}
 						} else {0}
 					} else {0};
-					let max = if let Some((ret, v)) = for21(qu, i.opt__()) {
+					let max = if let Some((ret, v)) = for21(qu, &i.count_) {
 						if ret != Return_::Ok {return ret}
 						if !v.is_empty() {
 							let u = &v[0];
@@ -127,7 +113,7 @@ pub mod world_ {
 							} else {return Return_::Err(["for count ", u].concat())}
 						} else {return Return_::Err("for count".to_string())}
 					} else {None};
-					let name = if let Some((ret, v)) = for21(qu, i.opt3__()) {
+					let name = if let Some((ret, v)) = for21(qu, &i.name_) {
 						if ret != Return_::Ok {return ret}
 						if !v.is_empty() {Some(v[0].clone())} else {None}
 					} else {None};
@@ -194,7 +180,9 @@ pub mod world_ {
 				Keyword_::Switch(_) => if let Some((ret2, v)) = for2(qu) {
 					//pr__!("switch {:?}\n", v);
 					if !v.is_empty() {
-						if let Some(codes2) = i.aa__() {
+						let item = i.as_any().downcast_ref::<switch_::Item_>().unwrap();
+						let op = item.op_.as_ref().unwrap();
+						if let Some(codes2) = &item.case_ {
 							let left = &v[0];
 							let mut defa = vec![];
 							let mut use_defa = true;
@@ -212,8 +200,21 @@ pub mod world_ {
 											Err(ret) => return ret
 										}
 									};
-									//pr__!("{:?} {:?}\n", left, v);
-									if v.contains(left) {
+									//pr__!("{:?} {:?} {:?}\n", left, op[idx], v);
+									if match op[idx] {
+										switch_::Op_::Eq => v.contains(left),
+										switch_::Op_::Ne => !v.contains(left),
+										_ => {
+											let right = &v[0];
+											match op[idx] {
+												switch_::Op_::Le => if let Some((left, right)) = to_2d__(left, right) {left <= right} else {left <= right}
+												switch_::Op_::Lt => if let Some((left, right)) = to_2d__(left, right) {left <  right} else {left <  right}
+												switch_::Op_::Ge => if let Some((left, right)) = to_2d__(left, right) {left >= right} else {left >= right}
+												switch_::Op_::Gt => if let Some((left, right)) = to_2d__(left, right) {left >  right} else {left >  right}
+												_ => false
+											}
+										}
+									} {
 										use_defa = false;
 										let ret2 = z__(&codes2, None, &mut DataMut_::new2(end), data2_mut, qu);
 										if ret2 != Return_::Ok {return ret2}
@@ -238,10 +239,11 @@ pub mod world_ {
 						if ret != Return_::Ok {return ret}
 						v
 					} else {vec!["".to_string()]};
-					let vals = if let Some((ret, v)) = for21(qu, i.a2__()) {
+					let vals = if let Some((ret, v)) = for21(qu, &i.as_any().downcast_ref::<set_::Item_>().unwrap().vals_) {
 						if ret != Return_::Ok {return ret}
 						v
 					} else {vec!["".to_string()]};
+					//pr__!("set {:?} {:?}\n", names, vals);
 					for (idx, name) in names.iter().enumerate() {
 						qu.val_to__(name.to_string(), vals[if idx >= vals.len() {vals.len() - 1} else {idx}].to_string());
 					}
@@ -259,6 +261,15 @@ pub mod world_ {
 			data_mut.idx += 1;
 		}
 		Return_::Ok
+	}
+	
+	fn to_2d__(s1:&str, s2:&str) -> Option<(f64, f64)> {
+		if let Ok(d1) = s1.parse::<f64>() {
+			if let Ok(d2) = s2.parse::<f64>() {
+				return Some((d1, d2))
+			}
+		}
+		None
 	}
 	
 	fn to_vec__(v:&Vec<CI_>, qu:&Qu_) -> Result<Vec<String>, Return_> {
@@ -343,7 +354,7 @@ pub mod world_ {
 	impl Data2Mut_ {
 		fn new() -> Self {Self {ret:vec![]}}
 		fn ret__(&mut self, s_:String) {
-			self.ret.push(Arc::new(Box::new(Text_ {s_})));
+			self.ret.push(new_ci__(Box::new(Text_ {s_})));
 		}
 	}
 	
@@ -404,10 +415,10 @@ mod pars_ {
 				new_ci__(Box::new(for_::Item_{a_:None, count_:None, start_:None, name_:None})),
 				new_ci__(Box::new(break_::Item_{a_:None, })),
 				new_ci__(Box::new(continue_::Item_{a_:None, })),
-				new_ci__(Box::new(switch_::Item_{a_:None, case_:None})),
-				new_ci__(Box::new(set_::Item_{a_:None, a2_:None, })),
+				new_ci__(Box::new(switch_::Item_{a_:None, case_:None, op_:None})),
+				new_ci__(Box::new(set_::Item_{names_:None, vals_:None})),
 				new_ci__(Box::new(print_::Item_{a_:None, })),
-				new_ci__(Box::new(expl_::Item_{a_:None, })),
+				new_ci__(Box::new(expl_::Item_{})),
 				new_ci__(Box::new(lf_::Item_{})),
 				new_ci__(Box::new(cr_::Item_{})),
 				new_ci__(Box::new(esc_::Item_{})),
@@ -648,13 +659,57 @@ mod pars_ {
 						}
 						Keyword_::Switch(a) => if let Some((ret, Some(mut codes2), None)) = for2(a, From2_::Indiff, From_::Switch, false, 1) {
 							let body = codes2.a_.pop();
-							codes.push(new_ci__(Box::new(switch_::Item_{a_:Some(codes2), case_:to_case__(body.unwrap().a__(), false)})));
+							let mut op = vec![];
+							let case_ = if let Some(codes) = body.unwrap().a__() {
+								let mut case = vec![];
+								let mut case_i = 0;
+								let mut case_i2 = 0;
+								for (idx, i) in codes.a_.iter().enumerate() {
+									let kw = &i.kw__()[0];
+									if idx == 0
+									|| if let Keyword_::Juhao(_) = kw {true} else {false}
+									{
+										case_i = case.len();
+										case.push(Codes_ {a_:vec![]});
+										case_i2 = 0;
+										if idx > 0 {
+											continue;
+										}
+									}
+									case_i2 += 1;
+									if case_i2 == 1 {
+										match kw {
+											Keyword_::Code => {
+												if let Some(s) = i.s__() {
+													let mut z = |e, s2:&str| {
+														if s.starts_with(s2) {
+															op.push(e);
+															case[case_i].a_.push(new_ci__(Box::new(Code_ {s_:s[s2.len()..].to_string()})));
+															true
+														} else {false}
+													};
+													if z(switch_::Op_::Ne, "不等于") {continue}
+													if z(switch_::Op_::Le, "小于等于") {continue}
+													if z(switch_::Op_::Lt, "小于") {continue}
+													if z(switch_::Op_::Ge, "大于等于") {continue}
+													if z(switch_::Op_::Gt, "大于") {continue}
+												}
+											}
+											_ => {}
+										}
+										op.push(switch_::Op_::Eq);
+									}
+									case[case_i].a_.push(i.clone());
+								}
+								Some(case)
+							} else {None};
+							codes.push(new_ci__(Box::new(switch_::Item_{a_:Some(codes2), case_, op_:Some(op)})));
 							ret2 = if ret == Return_::Block {Return_::Continue} else {ret}
 						}
-						Keyword_::Set(a) => if let Some((ret, /*codes2, codes3*/a_, a2_)) = for2(a, From2_::Indiff, From_::Set, false, 2) {
+						Keyword_::Set(a) => if let Some((ret, names_, vals_)) = for2(a, From2_::Indiff, From_::Set, false, 2) {
 							match ret {
 								Return_::Continue => {
-									codes.push(new_ci__(Box::new(set_::Item_{/*name_:to_case__(&codes2, true), val_:to_case__(&codes3, true)*/a_, a2_})));
+									codes.push(new_ci__(Box::new(set_::Item_{names_, vals_})));
 									ret2 = ret;
 								}
 								Return_::Ok => ret2 = Return_::To,
@@ -665,8 +720,8 @@ mod pars_ {
 							codes.push(new_ci__(Box::new(print_::Item_{a_})));
 							ret2 = ret
 						}
-						Keyword_::Expl(a) => if let Some((ret, a_, None)) = for2(a, From2_::Indiff, From_::Indiff, true, 1) {
-							codes.push(new_ci__(Box::new(expl_::Item_{a_})));
+						Keyword_::Expl(a) => if let Some((ret, a, None)) = for2(a, From2_::Indiff, From_::Indiff, true, 1) {
+							codes.push(new_ci__(Box::new(expl_::Item_{})));
 							ret2 = ret
 						}
 						Keyword_::Lf(a) => if for2_0(a).is_some() {}
@@ -696,28 +751,6 @@ mod pars_ {
 		}
 		clear_buf(&mut buf, data_mut.is_text, codes);
 		ret
-	}
-
-	fn to_case__(body:&Option<Codes_>, dunhao:bool) -> Option<Vec<Codes_>> {
-		if let Some(codes) = body {
-			let mut case = vec![];
-			let mut case_i = 0;
-			for (idx, i) in codes.a_.iter().enumerate() {
-				let kw = &i.kw__()[0];
-				if idx == 0
-				|| if let Keyword_::Juhao(_) = kw {true} else {false}
-				|| dunhao && if let Keyword_::Dunhao(_) = kw {true} else {false}
-				{
-					case_i = case.len();
-					case.push(Codes_ {a_:vec![]});
-					if idx > 0 {
-						continue;
-					}
-				}
-				case[case_i].a_.push(i.clone());
-			}
-			Some(case)
-		} else {None}
 	}
 
 	#[derive(Debug, PartialEq)]
@@ -782,11 +815,13 @@ struct Text_ {s_:String}
 impl CodeImpl_ for Text_ {
 	fn kw__(&self) -> Vec<Keyword_> {vec![Keyword_::Text]}
 	fn s__(&self) -> Option<&str> {Some(&self.s_)}
+	fn as_any(&self) -> &dyn Any {self}
 }
 struct Code_ {s_:String}
 impl CodeImpl_ for Code_ {
 	fn kw__(&self) -> Vec<Keyword_> {vec![Keyword_::Code]}
 	fn s__(&self) -> Option<&str> {Some(&self.s_)}
+	fn as_any(&self) -> &dyn Any {self}
 }
 #[derive(Debug)]
 struct Val_ {
@@ -796,8 +831,7 @@ struct Val_ {
 impl CodeImpl_ for Val_ {
 	fn kw__(&self) -> Vec<Keyword_> {vec![Keyword_::Val]}
 	fn s__(&self) -> Option<&str> {Some(&self.s_)}
-	fn s2__(&self) -> Option<&str> {Some(&self.name_)}
-	fn s_to__(&mut self, s:String) {self.s_ = s}
+	fn as_any(&self) -> &dyn Any {self}
 }
 
 fn tree__(codes:&Vec<CI_>) {
@@ -827,30 +861,41 @@ fn tree2__(codes:&Vec<CI_>, mut suojin:i32, tag:Option<&str>, mut eoe0:bool) {
 			}
 			_ => {
 				pr__!("{:?}\n", kw);
-				if let Some(codes) = i.opt__() {
-					tree2__(&codes.a_, suojin, i.optag__(), eoe0);
-				}
-				if let Some(codes) = i.opt2__() {
-					tree2__(&codes.a_, suojin, i.optag2__(), eoe0);
-				}
-				if let Some(codes) = i.opt3__() {
-					tree2__(&codes.a_, suojin, i.optag3__(), eoe0);
+				loop {
+					if let Some(i) = i.as_any().downcast_ref::<for_::Item_>() {
+						if let Some(codes) = &i.start_ {
+							tree2__(&codes.a_, suojin, Some("start"), eoe0);
+						}
+						if let Some(codes) = &i.count_ {
+							tree2__(&codes.a_, suojin, Some("count"), eoe0);
+						}
+						if let Some(codes) = &i.name_ {
+							tree2__(&codes.a_, suojin, Some("name"), eoe0);
+						}
+						break;
+					}
+					break;
 				}
 				if let Some(codes) = i.a__() {
 					tree2__(&codes.a_, suojin, i.a_tag__(), eoe0);
 				}
-				if let Some(codes) = i.a2__() {
-					tree2__(&codes.a_, suojin, i.a2_tag__(), eoe0);
-				}
-				if let Some(codes) = i.aa__() {
-					for codes in codes {
-						tree2__(&codes.a_, suojin, i.aa_tag__(), eoe0);
+				loop {
+					if let Some(i) = i.as_any().downcast_ref::<set_::Item_>() {
+						if let Some(codes) = &i.vals_ {
+							tree2__(&codes.a_, suojin, None, eoe0);
+						}
+						break;
 					}
-				}
-				if let Some(codes) = i.aa2__() {
-					for codes in codes {
-						tree2__(&codes.a_, suojin, i.aa2_tag__(), eoe0);
+					if let Some(i) = i.as_any().downcast_ref::<switch_::Item_>() {
+						if let Some(codes) = &i.case_ {
+							for codes in codes {
+								pr__!("{}\n", if eoe0 {""} else {"|"});
+								tree2__(&codes.a_, suojin, None, eoe0);
+							}
+						}
+						break;
 					}
+					break;
 				}
 			}
 		}
@@ -894,6 +939,7 @@ mod juhao_ {
 	pub struct Item_ {}
 	impl CodeImpl_ for Item_ {
 		fn kw__(&self) -> Vec<Keyword_> {vec![Keyword_::Juhao(vec![vec!['。', ], ])]}
+		fn as_any(&self) -> &dyn Any {self}
 	}
 }
 mod dunhao_ {
@@ -901,6 +947,7 @@ mod dunhao_ {
 	pub struct Item_ {}
 	impl CodeImpl_ for Item_ {
 		fn kw__(&self) -> Vec<Keyword_> {vec![Keyword_::Dunhao(vec![vec!['、', ], ])]}
+		fn as_any(&self) -> &dyn Any {self}
 	}
 }
 mod begin_rem_ {
@@ -908,6 +955,7 @@ mod begin_rem_ {
 	pub struct Item_ {}
 	impl CodeImpl_ for Item_ {
 		fn kw__(&self) -> Vec<Keyword_> {vec![Keyword_::BeginRem(vec![vec!['（', ], ])]}
+		fn as_any(&self) -> &dyn Any {self}
 	}
 }
 mod end_rem_ {
@@ -915,6 +963,7 @@ mod end_rem_ {
 	pub struct Item_ {}
 	impl CodeImpl_ for Item_ {
 		fn kw__(&self) -> Vec<Keyword_> {vec![Keyword_::EndRem(vec![vec!['）', ], ])]}
+		fn as_any(&self) -> &dyn Any {self}
 	}
 }
 mod begin_text_ {
@@ -922,6 +971,7 @@ mod begin_text_ {
 	pub struct Item_ {}
 	impl CodeImpl_ for Item_ {
 		fn kw__(&self) -> Vec<Keyword_> {vec![Keyword_::BeginText(vec![vec!['“', ], ])]}
+		fn as_any(&self) -> &dyn Any {self}
 	}
 }
 mod end_text_ {
@@ -929,6 +979,7 @@ mod end_text_ {
 	pub struct Item_ {}
 	impl CodeImpl_ for Item_ {
 		fn kw__(&self) -> Vec<Keyword_> {vec![Keyword_::EndText(vec![vec!['”', ], ])]}
+		fn as_any(&self) -> &dyn Any {self}
 	}
 }
 mod begin_text2_ {
@@ -936,6 +987,7 @@ mod begin_text2_ {
 	pub struct Item_ {}
 	impl CodeImpl_ for Item_ {
 		fn kw__(&self) -> Vec<Keyword_> {vec![Keyword_::BeginText2(vec![vec!['下', '原', '样', ], ])]}
+		fn as_any(&self) -> &dyn Any {self}
 	}
 }
 mod end_text2_ {
@@ -943,6 +995,7 @@ mod end_text2_ {
 	pub struct Item_ {}
 	impl CodeImpl_ for Item_ {
 		fn kw__(&self) -> Vec<Keyword_> {vec![Keyword_::EndText2(vec![vec!['上', '原', '样', ], ])]}
+		fn as_any(&self) -> &dyn Any {self}
 	}
 }
 mod begin_code_ {
@@ -950,6 +1003,7 @@ mod begin_code_ {
 	pub struct Item_ {}
 	impl CodeImpl_ for Item_ {
 		fn kw__(&self) -> Vec<Keyword_> {vec![Keyword_::BeginCode(vec![vec!['下', '代', '码', ], ])]}
+		fn as_any(&self) -> &dyn Any {self}
 	}
 }
 mod end_code_ {
@@ -957,6 +1011,7 @@ mod end_code_ {
 	pub struct Item_ {}
 	impl CodeImpl_ for Item_ {
 		fn kw__(&self) -> Vec<Keyword_> {vec![Keyword_::EndCode(vec![vec!['上', '代', '码', ], ])]}
+		fn as_any(&self) -> &dyn Any {self}
 	}
 }
 mod begin_code2_ {
@@ -964,6 +1019,7 @@ mod begin_code2_ {
 	pub struct Item_ {}
 	impl CodeImpl_ for Item_ {
 		fn kw__(&self) -> Vec<Keyword_> {vec![Keyword_::BeginCode2(vec![vec!['下', '源', '码', ], ])]}
+		fn as_any(&self) -> &dyn Any {self}
 	}
 }
 mod end_code2_ {
@@ -971,6 +1027,7 @@ mod end_code2_ {
 	pub struct Item_ {}
 	impl CodeImpl_ for Item_ {
 		fn kw__(&self) -> Vec<Keyword_> {vec![Keyword_::EndCode2(vec![vec!['上', '源', '码', ], ])]}
+		fn as_any(&self) -> &dyn Any {self}
 	}
 }
 mod rem2_ {
@@ -982,6 +1039,7 @@ mod rem2_ {
 		fn kw__(&self) -> Vec<Keyword_> {vec![Keyword_::Rem2(vec![vec!['【', ], vec!['】', ], ])]}
 		fn a__(&self) -> &Option<Codes_> {&self.a_}
 		fn mv_a__(&self) -> Option<Codes_> {self.a_.clone()}
+		fn as_any(&self) -> &dyn Any {self}
 	}
 }
 mod var_ {
@@ -992,6 +1050,7 @@ mod var_ {
 	impl CodeImpl_ for Item_ {
 		fn kw__(&self) -> Vec<Keyword_> {vec![Keyword_::Var(vec![vec!['‘', ], vec!['’', ], ])]}
 		fn a__(&self) -> &Option<Codes_> {&self.a_}
+		fn as_any(&self) -> &dyn Any {self}
 	}
 }
 mod block_ {
@@ -1002,6 +1061,7 @@ mod block_ {
 	impl CodeImpl_ for Item_ {
 		fn kw__(&self) -> Vec<Keyword_> {vec![Keyword_::Block(vec![vec!['先', ], vec!['了', ], ])]}
 		fn a__(&self) -> &Option<Codes_> {&self.a_}
+		fn as_any(&self) -> &dyn Any {self}
 	}
 }
 mod for_ {
@@ -1013,14 +1073,7 @@ mod for_ {
 	impl CodeImpl_ for Item_ {
 		fn kw__(&self) -> Vec<Keyword_> {vec![Keyword_::For(vec![vec!['循', '环', ], ])]}
 		fn a__(&self) -> &Option<Codes_> {&self.a_}
-		
-		fn opt__(&self) -> &Option<Codes_> {&self.count_}
-		fn opt2__(&self) -> &Option<Codes_> {&self.start_}
-		fn opt3__(&self) -> &Option<Codes_> {&self.name_}
-		fn optag__(&self) -> Option<&str> {Some("count")}
-		fn optag2__(&self) -> Option<&str> {Some("start")}
-		fn optag3__(&self) -> Option<&str> {Some("name")}
-
+		fn as_any(&self) -> &dyn Any {self}
 	}
 }
 mod break_ {
@@ -1031,6 +1084,7 @@ mod break_ {
 	impl CodeImpl_ for Item_ {
 		fn kw__(&self) -> Vec<Keyword_> {vec![Keyword_::Break(vec![vec!['跳', '出', ], ])]}
 		fn a__(&self) -> &Option<Codes_> {&self.a_}
+		fn as_any(&self) -> &dyn Any {self}
 	}
 }
 mod continue_ {
@@ -1041,36 +1095,44 @@ mod continue_ {
 	impl CodeImpl_ for Item_ {
 		fn kw__(&self) -> Vec<Keyword_> {vec![Keyword_::Continue(vec![vec!['再', '来', ], ])]}
 		fn a__(&self) -> &Option<Codes_> {&self.a_}
+		fn as_any(&self) -> &dyn Any {self}
 	}
 }
 mod switch_ {
 	use super::*;
 	pub struct Item_ {
 		pub a_:Option<Codes_>,
-		pub case_:Option<Vec<Codes_>>,
+		pub case_:Option<Vec<Codes_>>, pub op_:Option<Vec<Op_>>,
 	}
 	impl CodeImpl_ for Item_ {
 		fn kw__(&self) -> Vec<Keyword_> {vec![Keyword_::Switch(vec![vec!['分', '叉', ], ])]}
 		fn a__(&self) -> &Option<Codes_> {&self.a_}
-		
-		fn aa__(&self) -> &Option<Vec<Codes_>> {&self.case_}
 		fn a_tag__(&self) -> Option<&str> {Some("left")}
 
+		fn as_any(&self) -> &dyn Any {self}
 	}
+	#[derive(Debug)]
+	pub enum Op_ {
+		Eq,
+		Ne,
+		Le,
+		Lt,
+		Ge,
+		Gt
+	}
+
 }
 mod set_ {
 	use super::*;
 	pub struct Item_ {
-		pub a_:Option<Codes_>,
-		pub a2_:Option<Codes_>,
+		pub names_:Option<Codes_>, pub vals_:Option<Codes_>,
 	}
 	impl CodeImpl_ for Item_ {
 		fn kw__(&self) -> Vec<Keyword_> {vec![Keyword_::Set(vec![vec!['赋', '予', ], vec!['以', ], ])]}
-		fn a__(&self) -> &Option<Codes_> {&self.a_}
-		fn a2__(&self) -> &Option<Codes_> {&self.a2_}
-		
+		fn a__(&self) -> &Option<Codes_> {&self.names_}
 		fn a_tag__(&self) -> Option<&str> {Some("name")}
 
+		fn as_any(&self) -> &dyn Any {self}
 	}
 }
 mod print_ {
@@ -1081,16 +1143,15 @@ mod print_ {
 	impl CodeImpl_ for Item_ {
 		fn kw__(&self) -> Vec<Keyword_> {vec![Keyword_::Print(vec![vec!['显', '示', ], ])]}
 		fn a__(&self) -> &Option<Codes_> {&self.a_}
+		fn as_any(&self) -> &dyn Any {self}
 	}
 }
 mod expl_ {
 	use super::*;
-	pub struct Item_ {
-		pub a_:Option<Codes_>,
-	}
+	pub struct Item_ {}
 	impl CodeImpl_ for Item_ {
 		fn kw__(&self) -> Vec<Keyword_> {vec![Keyword_::Expl(vec![vec!['算', '术', ], ])]}
-		fn a__(&self) -> &Option<Codes_> {&self.a_}
+		fn as_any(&self) -> &dyn Any {self}
 	}
 }
 mod lf_ {
@@ -1099,6 +1160,7 @@ mod lf_ {
 	impl CodeImpl_ for Item_ {
 		fn kw__(&self) -> Vec<Keyword_> {vec![Keyword_::Lf(vec![vec!['换', '行', ], ])]}
 		fn s__(&self) -> Option<&str> {Some("\n")}
+		fn as_any(&self) -> &dyn Any {self}
 	}
 }
 mod cr_ {
@@ -1107,6 +1169,7 @@ mod cr_ {
 	impl CodeImpl_ for Item_ {
 		fn kw__(&self) -> Vec<Keyword_> {vec![Keyword_::Cr(vec![vec!['回', '车', ], ])]}
 		fn s__(&self) -> Option<&str> {Some("\r")}
+		fn as_any(&self) -> &dyn Any {self}
 	}
 }
 mod esc_ {
@@ -1115,5 +1178,6 @@ mod esc_ {
 	impl CodeImpl_ for Item_ {
 		fn kw__(&self) -> Vec<Keyword_> {vec![Keyword_::Esc(vec![vec!['E', 'S', 'C', ], ])]}
 		fn s__(&self) -> Option<&str> {Some("\x1b")}
+		fn as_any(&self) -> &dyn Any {self}
 	}
 }

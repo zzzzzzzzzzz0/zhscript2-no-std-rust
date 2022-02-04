@@ -17,7 +17,7 @@
 
 调用‘迭代三’、下代码
 	显参。
-	形参起英、汉、定制、定制2、定制3、另、子句个、。
+	形参起英、汉、定制、定制itm、定制new、定制mod、另、子句个、。
 	赋予键以Keyword_::‘英’(vec![先
 		调用‘迭代三’、下代码
 			别名汉以参数1。
@@ -38,7 +38,7 @@
 	否则
 		赋予子句数以算术-‘子句个’。
 
-	赋予中以new_ci__(Box::new(‘关’::Item_{循环【‘子句个’】【第】先a顺序“_:None, ”了‘定制3’}))。
+	赋予中以new_ci__(Box::new(‘关’::Item_{循环【‘子句个’】【第】先a顺序“_:None, ”了‘定制new’}))。
 	如果‘另’那么先
 		1.文 += 循环【2】先制表符了“let ‘关.1’ = ‘中’;”。
 		赋予中以‘关.1’.clone()。
@@ -53,17 +53,17 @@
 		循环【‘子句个’】【第】先
 			制表符制表符“pub a”顺序“_:Option<Codes_>,”换行
 		了
-		先如果‘定制2’那么制表符制表符‘定制2’换行了
 		制表符
+	了如果不‘定制itm’否则先
+		如果‘子句个’否则先换行制表符了制表符‘定制itm’换行制表符
 	了下文本}
 	impl CodeImpl_ for Item_ {
 		fn kw__(&self) -> Vec<Keyword_> {vec![‘键’]}上文本先
 		循环【‘子句个’】【第】下文本
-		fn a上文本顺序“__(&self) -> &Option<Codes_> {&self.a”顺序_}。
-		如果‘定制’那么下文本
-		‘定制’上文本。
+		fn a上文本顺序“__(&self) -> &Option<Codes_> {&self.a”顺序_}。‘定制’
 	了下文本
-	}
+		fn as_any(&self) -> &dyn Any {self}
+	}‘定制mod’
 }上文本。
 	4 += 循环【6】先制表符了“Keyword_::‘英’(a) => if for2(a, From2_::”分叉‘另’先
 		文‘英’。
@@ -79,7 +79,7 @@
 			了“= 1; continue 'l1”
 		了。
 	了}。
-上代码、7 先
+上代码、8 先
 	赋予栈2、数3以下代码
 		别名汉以参数2。
 		、‘参数1’、分叉‘汉’先下原样“上原样、下原样”上原样先“下原样‘汉’上原样”了。先““‘汉’””了了、
@@ -89,9 +89,9 @@
 	赋予栈以‘栈2’下代码
 		‘参数栈【3】’、
 	上代码。
-	定义1顿【无参】以“、、、”。
+	定义1顿【无参】以“、、、、”。
+	定义2顿【无参】以“、、”。
 	赋予“、”以“‘1顿’、”。
-	定义2顿【无参】以“、”。
 
 	调用‘迭代三’、“‘栈’‘、’0”、2、
 		Juhao、“。”、
@@ -107,44 +107,57 @@
 		EndCode、“上代码”、
 		BeginCode2、“下源码”、
 		EndCode2、“上源码”。
-	、Rem2、““【”、“】””、“fn mv_a__(&self) -> Option<Codes_> {self.a_.clone()}”1顿、1。
+	、Rem2、““【”、“】””、下原样
+		fn mv_a__(&self) -> Option<Codes_> {self.a_.clone()}上原样1顿、1。
 	、Var、下原样下原样‘上原样、下原样’上原样上原样、1顿1、1。
 	、Block、““先”、“了””、1顿、1。
 
-	、For、““循环””、下原样
-		fn opt__(&self) -> &Option<Codes_> {&self.count_}
-		fn opt2__(&self) -> &Option<Codes_> {&self.start_}
-		fn opt3__(&self) -> &Option<Codes_> {&self.name_}
-		fn optag__(&self) -> Option<&str> {Some("count")}
-		fn optag2__(&self) -> Option<&str> {Some("start")}
-		fn optag3__(&self) -> Option<&str> {Some("name")}
-上原样、
+	、For、““循环””、、
 	“pub count_:Option<Codes_>, pub start_:Option<Codes_>, pub name_:Option<Codes_>”、
 	“count_:None, start_:None, name_:None”2顿、1。
 	调用‘迭代三’、“‘栈’‘、’1”、2、
 		Break、“跳出”、
 		Continue、“再来”。
 	
-	、Switch、““分叉”、“小于等于”、“小于”、“大于等于”、“大于”、“不等于””、下原样
-		fn aa__(&self) -> &Option<Vec<Codes_>> {&self.case_}
+	、Switch、““分叉””、下原样
 		fn a_tag__(&self) -> Option<&str> {Some("left")}
-上原样、“pub case_:Option<Vec<Codes_>>,”、“case_:None”2顿、1。
-	、Set、““赋予”、“以””、（下原样
-		fn aa__(&self) -> &Option<Vec<Codes_>> {&self.name_}
-		fn aa2__(&self) -> &Option<Vec<Codes_>> {&self.val_}
-		fn aa_tag__(&self) -> Option<&str> {Some("name")}
-上原样）下原样
+上原样、“pub case_:Option<Vec<Codes_>>, pub op_:Option<Vec<Op_>>,”、“case_:None, op_:None”、下原样
+	#[derive(Debug)]
+	pub enum Op_ {
+		Eq,
+		Ne,
+		Le,
+		Lt,
+		Ge,
+		Gt
+	}
+上原样、、1。
+	、Set、““赋予”、“以””、下原样
+		fn a__(&self) -> &Option<Codes_> {&self.names_}
 		fn a_tag__(&self) -> Option<&str> {Some("name")}
-上原样、（“pub name_:Option<Vec<Codes_>>, pub val_:Option<Vec<Codes_>>,”）、（“name_:None, val_:None”）2顿、（-）2。
+上原样、“pub names_:Option<Codes_>, pub vals_:Option<Codes_>,”、“names_:None, vals_:None”2顿、0。
 	调用‘迭代三’、“‘栈’‘、’1”、2、
-		Print、“显示”、
-		Expl、“算术”。
+		Print、“显示”。
+	、Expl、““算术””、2顿、下原样
+	pub enum Op_ {
+		Add,
+		Sub,
+		Mul,
+		Div,
+		Rem,
+		Pow,
+		B,
+		E,
+		Code(CI_)
+	}
+上原样、、0。
 
 	（先实现成关键字）
-	调用‘迭代三’、“‘栈2’“fn s__(&self) -> Option<&str> {Some("\‘数3’")}”‘、’0”、3、
+	调用‘迭代三’、‘栈2’下文本下文本
+		fn s__(&self) -> Option<&str> {Some("\‘数3’")}上文本上文本“‘、’0”、3、
 		L（ine）f（eed）、“换行”、n、
 		Cr、“回车”、r、
-		Esc、“ESC”、x1b。
+		Esc、“ESC”、x1b。（）
 了。
 
 定义进行、用以下代码
@@ -211,7 +224,8 @@ pub enum Keyword_ {
 	大于1‘1’先
 	了。
 了
-算术+、-、*、/、%、^、(、)
+算术
+enum +、-、*、/、%、^、(、)
 
 在流转过程中没有字符串只有引用
 
