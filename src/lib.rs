@@ -248,8 +248,52 @@ pub mod world_ {
 						qu.val_to__(name.to_string(), vals[if idx >= vals.len() {vals.len() - 1} else {idx}].to_string());
 					}
 				}
+				Keyword_::Expl(_) => if let Some((ret, v)) = for2(qu) {
+					let mut opa = vec![];
+					{
+						let mut s:Vec<char> = v[0].chars().collect();
+						s.push('\x00');
+						let mut i = 0;
+						let mut oldi = core::usize::MAX;
+						let mut ret2 = Return_::Ok;
+						loop {
+							if i >= s.len() {break}
+							let mut for2 = |op| {
+								if oldi != core::usize::MAX {
+									let s2 = &String::from_iter(&s[oldi..i]);
+									if let Ok(d) = s2.parse::<f64>() {
+										opa.push(expl_::Op_::Num(d));
+									} else {
+										ret2 = Return_::Err([s2, "非数字"].concat());
+									}
+									oldi = core::usize::MAX;
+								}
+								if let expl_::Op_::No = op {return}
+								opa.push(op);
+							};
+							match s[i] {
+								'+' | '加' => for2(expl_::Op_::Add),
+								'-' | '减' => for2(expl_::Op_::Sub),
+								'*' | '乘' => for2(expl_::Op_::Mul),
+								'/' | '除' => for2(expl_::Op_::Div),
+								'%' | '模' => for2(expl_::Op_::Mod),
+								'^' | '方' => for2(expl_::Op_::Pow),
+								'(' => for2(expl_::Op_::BeginG),
+								')' => for2(expl_::Op_::EndG),
+								'\x00' => for2(expl_::Op_::No),
+								_ => if oldi == core::usize::MAX {oldi = i;}
+							}
+							if ret2 != Return_::Ok {return ret2}
+							i += 1;
+						}
+					}
+					match expl__(&opa) {
+						Ok(d) => data2_mut.ret__(d.to_string()),
+						Err(ret) => return ret
+					}
+					if ret != Return_::Ok {return ret}
+				}
 				Keyword_::Print(_) => if let Some((ret, v)) = for2(qu) {
-					//pr__!("{:?}\n", v);
 					if !v.is_empty() {
 						pr__!("{}", v[0]);
 					}
@@ -297,10 +341,7 @@ pub mod world_ {
 					clear_buf(&mut buf, dunhao);
 				}
 				Keyword_::Text | Keyword_::Code | Keyword_::Lf(_) | Keyword_::Cr(_) | Keyword_::Esc(_) => for2(),
-				Keyword_::Var(_) => match val__(i, qu) {
-					Ok(s) => buf.push_str(s),
-					Err(ret2) => return Err(ret2)
-				}
+				Keyword_::Var(_) => buf.push_str(val__(i, qu)?),
 				_ => {
 					//panic!
 					pr__!("err to_vec__ {:?}\n", kw); loop{}
@@ -316,22 +357,70 @@ pub mod world_ {
 			let mut data2_mut2 = Data2Mut_::new();
 			let ret2 = z__(&codes2.a_, None, &mut DataMut_::new(), &mut data2_mut2, &mut Qu_::new());
 			if ret2 != Return_::Ok {return Err(ret2);}
-			match to_vec__(&data2_mut2.ret, qu) {
-				Ok(v) => {
-					if !v.is_empty() {
-						let name = &v[0];
-						if let Some(val) = qu.val__(name) {
-							//pr__!("{:?}\n", val);
-							return Ok(&val.s_);
-						} else {return Err(Return_::Err(["var no ", name].concat()))}
-					} else {return Err(Return_::Err("var no".to_string()))}
-				}
-				Err(ret2) => return Err(ret2)
-			}
+			let v = to_vec__(&data2_mut2.ret, qu)?;
+			if !v.is_empty() {
+				let name = &v[0];
+				if let Some(val) = qu.val__(name) {
+					//pr__!("{:?}\n", val);
+					return Ok(&val.s_);
+				} else {return Err(Return_::Err(["var no ", name].concat()))}
+			} else {return Err(Return_::Err("var no".to_string()))}
 		}
 		Ok("")
 	}
 
+	type ExplRes_ = Result<f64, Return_>;
+	fn expl__(opa:&Vec<expl_::Op_>) -> ExplRes_ {
+		pr__!("{:?}\n", opa);
+		expl_2__(opa, &mut 0)
+	}
+	fn expl_2__(opa:&Vec<expl_::Op_>, idx:&mut usize) -> ExplRes_ {
+		let mut ret = expl_3__(opa, idx)?;
+		while *idx < opa.len() {
+			match opa[*idx] {
+				expl_::Op_::Add => {*idx += 1; ret += expl_3__(opa, idx)?;}
+				expl_::Op_::Sub => {*idx += 1; ret -= expl_3__(opa, idx)?;}
+				_ => break
+			}
+		}
+		Ok(ret)
+	}
+	fn expl_3__(opa:&Vec<expl_::Op_>, idx:&mut usize) -> ExplRes_ {
+		let mut ret = expl_4__(opa, idx)?;
+		while *idx < opa.len() {
+			match opa[*idx] {
+				expl_::Op_::Mul => {*idx += 1; ret *= expl_4__(opa, idx)?;}
+				expl_::Op_::Div => {*idx += 1; ret /= expl_4__(opa, idx)?;}
+				expl_::Op_::Mod => {*idx += 1; ret %= expl_4__(opa, idx)?;}
+				_ => break
+			}
+		}
+		Ok(ret)
+	}
+	fn expl_4__(opa:&Vec<expl_::Op_>, idx:&mut usize) -> ExplRes_ {
+		let mut ret = expl_5__(opa, idx)?;
+		while *idx < opa.len() {
+			match opa[*idx] {
+				expl_::Op_::Pow => {*idx += 1; /*ret = ret.powf();*/ 
+					let mut d2 = expl_5__(opa, idx)?;
+					let d1 = ret;
+					while d2 > 1. {
+						ret *= d1;
+						d2 -= 1.;
+					}
+				}
+				_ => break
+			}
+		}
+		Ok(ret)
+	}
+	fn expl_5__(opa:&Vec<expl_::Op_>, idx:&mut usize) -> ExplRes_ {
+		match opa[*idx] {
+			expl_::Op_::Num(d) => {*idx += 1; Ok(d)}
+			expl_::Op_::BeginG => {*idx += 1; let ret = expl_2__(opa, idx)?; *idx += 1; Ok(ret)}
+			_ => Ok(0.)
+		}
+	}
 
 	#[derive(Debug, PartialEq)]
 	enum Return_ {
@@ -418,7 +507,7 @@ mod pars_ {
 				new_ci__(Box::new(switch_::Item_{a_:None, case_:None, op_:None})),
 				new_ci__(Box::new(set_::Item_{names_:None, vals_:None})),
 				new_ci__(Box::new(print_::Item_{a_:None, })),
-				new_ci__(Box::new(expl_::Item_{})),
+				new_ci__(Box::new(expl_::Item_{a_:None, })),
 				new_ci__(Box::new(lf_::Item_{})),
 				new_ci__(Box::new(cr_::Item_{})),
 				new_ci__(Box::new(esc_::Item_{})),
@@ -720,8 +809,8 @@ mod pars_ {
 							codes.push(new_ci__(Box::new(print_::Item_{a_})));
 							ret2 = ret
 						}
-						Keyword_::Expl(a) => if let Some((ret, a, None)) = for2(a, From2_::Indiff, From_::Indiff, true, 1) {
-							codes.push(new_ci__(Box::new(expl_::Item_{})));
+						Keyword_::Expl(a) => if let Some((ret, a_, None)) = for2(a, From2_::Indiff, From_::Indiff, true, 1) {
+							codes.push(new_ci__(Box::new(expl_::Item_{a_})));
 							ret2 = ret
 						}
 						Keyword_::Lf(a) => if for2_0(a).is_some() {}
@@ -1059,7 +1148,7 @@ mod block_ {
 		pub a_:Option<Codes_>,
 	}
 	impl CodeImpl_ for Item_ {
-		fn kw__(&self) -> Vec<Keyword_> {vec![Keyword_::Block(vec![vec!['先', ], vec!['了', ], ])]}
+		fn kw__(&self) -> Vec<Keyword_> {vec![Keyword_::Block(vec![vec!['则', ], vec!['了', ], ])]}
 		fn a__(&self) -> &Option<Codes_> {&self.a_}
 		fn as_any(&self) -> &dyn Any {self}
 	}
@@ -1148,11 +1237,28 @@ mod print_ {
 }
 mod expl_ {
 	use super::*;
-	pub struct Item_ {}
+	pub struct Item_ {
+		pub a_:Option<Codes_>,
+	}
 	impl CodeImpl_ for Item_ {
 		fn kw__(&self) -> Vec<Keyword_> {vec![Keyword_::Expl(vec![vec!['算', '术', ], ])]}
+		fn a__(&self) -> &Option<Codes_> {&self.a_}
 		fn as_any(&self) -> &dyn Any {self}
 	}
+	#[derive(Debug)]
+	pub enum Op_ {
+		Add,
+		Sub,
+		Mul,
+		Div,
+		Mod,
+		Pow,
+		BeginG,
+		EndG,
+		Num(f64),
+		No
+	}
+
 }
 mod lf_ {
 	use super::*;

@@ -110,7 +110,7 @@
 	、Rem2、““【”、“】””、下原样
 		fn mv_a__(&self) -> Option<Codes_> {self.a_.clone()}上原样1顿、1。
 	、Var、下原样下原样‘上原样、下原样’上原样上原样、1顿1、1。
-	、Block、““先”、“了””、1顿、1。
+	、Block、““则”、“了””、1顿、1。
 
 	、For、““循环””、、
 	“pub count_:Option<Codes_>, pub start_:Option<Codes_>, pub name_:Option<Codes_>”、
@@ -139,18 +139,19 @@
 	调用‘迭代三’、“‘栈’‘、’1”、2、
 		Print、“显示”。
 	、Expl、““算术””、2顿、下原样
+	#[derive(Debug)]
 	pub enum Op_ {
 		Add,
 		Sub,
 		Mul,
 		Div,
-		Rem,
+		Mod,
 		Pow,
-		B,
-		E,
-		Code(CI_)
-	}
-上原样、、0。
+		BeginG,
+		EndG,
+		Num(f64),
+		No
+上原样、、1。
 
 	（先实现成关键字）
 	调用‘迭代三’、‘栈2’下文本下文本
@@ -220,12 +221,7 @@ pub enum Keyword_ {
 调用‘命令行解析’、‘解’、‘参数栈’。
 
 （
-分叉‘1’1先
-	大于1‘1’先
-	了。
-了
-算术
-enum +、-、*、/、%、^、(、)
+“先”“了”改“等”“之”“则”“即”“了”？
 
 在流转过程中没有字符串只有引用
 
