@@ -5,8 +5,10 @@ extern crate alloc;
 
 #[cfg(not(feature = "no"))]
 use alloc::{string::{String, ToString}, vec, vec::Vec, boxed::Box, sync::Arc};
+#[cfg(not(feature = "no"))]
+use spin::RwLock;
 #[cfg(feature = "no")]
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 use core::any::Any;
 
 #[cfg(not(feature = "no"))]
@@ -24,6 +26,11 @@ macro_rules! pr__ {
 		print!($($arg)*);
 	)
 }
+
+#[cfg(not(feature = "no"))] macro_rules! l_r__ {($l:expr) => ($l.read())}
+#[cfg(feature = "no")] macro_rules! l_r__ {($l:expr) => ($l.read().unwrap())}
+#[cfg(not(feature = "no"))] macro_rules! l_w__ {($l:expr) => ($l.write())}
+#[cfg(feature = "no")] macro_rules! l_w__ {($l:expr) => ($l.write().unwrap())}
 
 pub trait CodeImpl_ {
 	fn kw__(&self) -> Vec<Keyword_>;
@@ -46,33 +53,50 @@ pub mod world_ {
 	use alloc::{string::String, vec};
 	use super::{*};
 
-	pub fn hello__(s:&str) {
-		//pr__!("\n{}\n", s);
-		
-		let mut codes = vec![];
-		let ret = pars_::hello__(s, &mut codes);
-		if ret != pars_::Return_::Ok {
-			pr__!("{:?}\n", ret);
-			return;
+	pub fn hello__(s:&str) {z2__(s, false)}
+	pub fn hello2__(s:&str) {z2__(s, true)}
+	fn z2__(s:&str, tree:bool) {z3__(s, &Debug_::new2(tree))}
+	fn z3__(s:&str, dbg:&Debug_) {z4__(s, &Data_::new(), dbg);}
+	fn z4__(s:&str, data:&Data_, dbg:&Debug_) -> Return_ {
+		if dbg.tree {
+			pr__!("\n{}\n", s);
 		}
-		//tree__(&codes);
+		let mut codes = vec![];
+		{
+			let ret = pars_::hello__(s, &mut codes);
+			if ret != pars_::Return_::Ok {
+				pr__!("{:?}\n", ret);
+				return Return_::Err2;
+			}
+		}
+		if dbg.tree {
+			tree__(&codes);
+		}
 
-		let ret = z__(&codes, None, &mut DataMut_::new(), &mut Data2Mut_::new(), &mut Qu_::new());
-		if ret != Return_::Ok {
+		let mut data2_mut = Data2Mut_::new();
+		let qu = RwLock::new(Qu_::new());
+		let ret = z__(&codes, None, data, &Data2_::new(), &mut DataMut_::new(), &mut data2_mut, &qu, dbg);
+		if ret == Return_::Ok {
+			match to_vec__(&data2_mut.ret, &qu) {
+				Ok(v) => Return_::Ok2(v),
+				Err(ret2) => ret2
+			}
+		} else {
 			pr__!("{:?}\n", ret);
+			ret
 		}
 	}
-	fn z__(codes:&Vec<CI_>, end:Option<usize>, data_mut:&mut DataMut_, data2_mut:&mut Data2Mut_, qu:&mut Qu_) -> Return_ {
-		let for22 = |qu:&mut Qu_, data2_mut2:&mut Data2Mut_, a:&Option<Codes_>| {
+	fn z__(codes:&Vec<CI_>, end:Option<usize>, data:&Data_, data2:&Data2_, data_mut:&mut DataMut_, data2_mut:&mut Data2Mut_, qu:&RwLock<Qu_>, dbg:&Debug_) -> Return_ {
+		let for22 = |qu:&RwLock<Qu_>, data2_mut2:&mut Data2Mut_, a:&Option<Codes_>| {
 			if let Some(codes2) = a {
-				let ret = z__(&codes2.a_, None, &mut DataMut_::new(), data2_mut2, qu);
+				let ret = z__(&codes2.a_, None, data, data2, &mut DataMut_::new(), data2_mut2, qu, dbg);
 				match to_vec__(&data2_mut2.ret, qu) {
 					Ok(v) => Some((ret, v)),
 					Err(ret2) => Some((ret2, vec![]))
 				}
 			} else {None}
 		};
-		let for21 = |qu:&mut Qu_, a| {
+		let for21 = |qu:&RwLock<Qu_>, a| {
 			for22(qu, &mut Data2Mut_::new(), a)
 		};
 
@@ -86,8 +110,12 @@ pub mod world_ {
 			//pr__!("{:?}\n", kw);
 			let for2 = |qu| for21(qu, i.a__());
 			match kw {
-				Keyword_::Var(_) => match val__(i, qu) {
-					Ok(s) => data2_mut.ret__(s.to_string()),
+				Keyword_::Code => {
+					let ret = find_def__(i.s__().unwrap(), codes, data, data_mut, data2_mut, qu, dbg);
+					if ret != Return_::Ok {return ret}
+				}
+				Keyword_::Var(_) => match val__(i, qu, data, dbg) {
+					Ok(s) => data2_mut.ret.push(s),
 					Err(ret2) => return ret2
 				}
 				Keyword_::Block(_) => if let Some((ret, _)) = for22(qu, data2_mut, i.a__()) {
@@ -98,16 +126,16 @@ pub mod world_ {
 					let mut cnt = if let Some((ret, v)) = for21(qu, &i.start_) {
 						if ret != Return_::Ok {return ret}
 						if !v.is_empty() {
-							let u = &v[0];
+							let u = &v[0].s_;
 							if let Ok(u) = u.parse::<usize>() {
-								u
+								if u > 0 {u - 1} else {u}
 							} else {return Return_::Err(["for start ", u].concat())}
 						} else {0}
 					} else {0};
 					let max = if let Some((ret, v)) = for21(qu, &i.count_) {
 						if ret != Return_::Ok {return ret}
 						if !v.is_empty() {
-							let u = &v[0];
+							let u = &v[0].s_;
 							if let Ok(u) = u.parse::<usize>() {
 								Some(u + cnt)
 							} else {return Return_::Err(["for count ", u].concat())}
@@ -115,7 +143,7 @@ pub mod world_ {
 					} else {None};
 					let name = if let Some((ret, v)) = for21(qu, &i.name_) {
 						if ret != Return_::Ok {return ret}
-						if !v.is_empty() {Some(v[0].clone())} else {None}
+						if !v.is_empty() {Some(v[0].s_.clone())} else {None}
 					} else {None};
 					//pr__!("for max={:?} start={:?} name={:?}\n", max, cnt, name);
 					loop {
@@ -124,7 +152,7 @@ pub mod world_ {
 							if cnt > max {break}
 						}
 						if let Some(name) = &name {
-							qu.val_to__(name.clone(), cnt.to_string());
+							l_w__!(qu).val_to__(name.clone(), new_text__(cnt.to_string()));
 						}
 						if let Some((ret, _)) = for22(qu, data2_mut, i.a__()) {
 							match &ret {
@@ -165,14 +193,14 @@ pub mod world_ {
 				}
 				Keyword_::Break(_) => return if let Some((ret, v)) = for2(qu) {
 					if ret != Return_::Ok {ret} else {
-						Return_::Break(Some(if !v.is_empty() {&v[0]} else {""}.to_string()))
+						Return_::Break(Some(if !v.is_empty() {&v[0].s_} else {""}.to_string()))
 					}
 				} else {
 					Return_::Break(None)
 				},
 				Keyword_::Continue(_) => return if let Some((ret, v)) = for2(qu) {
 					if ret != Return_::Ok {ret} else {
-						Return_::Continue(Some(if !v.is_empty() {&v[0]} else {""}.to_string()))
+						Return_::Continue(Some(if !v.is_empty() {&v[0].s_} else {""}.to_string()))
 					}
 				} else {
 					Return_::Continue(None)
@@ -193,7 +221,7 @@ pub mod world_ {
 									let end = len - 1;
 									let v = {
 										let mut data2_mut2 = Data2Mut_::new();
-										let ret = z__(&codes2, Some(end), &mut DataMut_::new(), &mut data2_mut2, qu);
+										let ret = z__(&codes2, Some(end), data, data2, &mut DataMut_::new(), &mut data2_mut2, qu, dbg);
 										if ret != Return_::Ok {return ret}
 										match to_vec__(&data2_mut2.ret, qu) {
 											Ok(v) => v,
@@ -205,7 +233,8 @@ pub mod world_ {
 										switch_::Op_::Eq => v.contains(left),
 										switch_::Op_::Ne => !v.contains(left),
 										_ => {
-											let right = &v[0];
+											let left = &left.s_;
+											let right = &v[0].s_;
 											match op[idx] {
 												switch_::Op_::Le => if let Some((left, right)) = to_2d__(left, right) {left <= right} else {left <= right}
 												switch_::Op_::Lt => if let Some((left, right)) = to_2d__(left, right) {left <  right} else {left <  right}
@@ -216,7 +245,7 @@ pub mod world_ {
 										}
 									} {
 										use_defa = false;
-										let ret2 = z__(&codes2, None, &mut DataMut_::new2(end), data2_mut, qu);
+										let ret2 = z__(&codes2, None, data, data2, &mut DataMut_::new2(end), data2_mut, qu, dbg);
 										if ret2 != Return_::Ok {return ret2}
 									}
 								}
@@ -226,7 +255,7 @@ pub mod world_ {
 							}
 							if use_defa {
 								for idx in defa {
-									let ret2 = z__(&codes2[idx].a_, None, &mut DataMut_::new(), data2_mut, qu);
+									let ret2 = z__(&codes2[idx].a_, None, data, data2, &mut DataMut_::new(), data2_mut, qu, dbg);
 									if ret2 != Return_::Ok {return ret2}
 								}
 							}
@@ -238,20 +267,35 @@ pub mod world_ {
 					let names = if let Some((ret, v)) = for2(qu) {
 						if ret != Return_::Ok {return ret}
 						v
-					} else {vec!["".to_string()]};
+					} else {vec![Text_::new("".to_string())]};
 					let vals = if let Some((ret, v)) = for21(qu, &i.as_any().downcast_ref::<set_::Item_>().unwrap().vals_) {
 						if ret != Return_::Ok {return ret}
-						v
-					} else {vec!["".to_string()]};
+						tv_to_civ__(v)
+					} else {vec![new_text__("".to_string())]};
 					//pr__!("set {:?} {:?}\n", names, vals);
 					for (idx, name) in names.iter().enumerate() {
-						qu.val_to__(name.to_string(), vals[if idx >= vals.len() {vals.len() - 1} else {idx}].to_string());
+						l_w__!(qu).val_to__(name.s_.to_string(), vals[if idx >= vals.len() {vals.len() - 1} else {idx}].clone());
 					}
+				}
+				Keyword_::Def(_) => {
+					let mut names = if let Some((ret, v)) = for2(qu) {
+						if ret != Return_::Ok {return ret}
+						if v.is_empty() {return Return_::Err("def name empty".to_string())}
+						v
+					} else {return Return_::Err2};
+					let code = if let Some((ret, v)) = for21(qu, &i.as_any().downcast_ref::<def_::Item_>().unwrap().code_) {
+						if ret != Return_::Ok {return ret}
+						v
+					} else {return Return_::Err2};
+					let name = names.remove(0).s_;
+					if name.is_empty() {return Return_::Err("def name empty".to_string())}
+					//pr__!("def {:?} {:?} {:?}\n", name, names, code);
+					l_w__!(qu).def_to__(name, Arc::new(names), code[0].s_.to_string());
 				}
 				Keyword_::Expl(_) => if let Some((ret, v)) = for2(qu) {
 					let mut opa = vec![];
 					{
-						let mut s:Vec<char> = v[0].chars().collect();
+						let mut s:Vec<char> = v[0].s_.chars().collect();
 						s.push('\x00');
 						let mut i = 0;
 						let mut oldi = core::usize::MAX;
@@ -287,6 +331,9 @@ pub mod world_ {
 							i += 1;
 						}
 					}
+					if dbg.tree {
+						pr__!("{:?}\n", opa);
+					}
 					match expl__(&opa) {
 						Ok(d) => data2_mut.ret__(d.to_string()),
 						Err(ret) => return ret
@@ -295,11 +342,11 @@ pub mod world_ {
 				}
 				Keyword_::Print(_) => if let Some((ret, v)) = for2(qu) {
 					if !v.is_empty() {
-						pr__!("{}", v[0]);
+						pr__!("{}", v[0].s_);
 					}
 					if ret != Return_::Ok {return ret}
 				}
-				Keyword_::Juhao(_) => {}
+				Keyword_::Juhao(_) => if data2.juhao {break}
 				_ => data2_mut.ret.push(i.clone())
 			}
 			data_mut.idx += 1;
@@ -316,13 +363,13 @@ pub mod world_ {
 		None
 	}
 	
-	fn to_vec__(v:&Vec<CI_>, qu:&Qu_) -> Result<Vec<String>, Return_> {
+	fn to_vec__(v:&Vec<CI_>, qu:&RwLock<Qu_>) -> Result<Vec<Text_>, Return_> {
 		let mut ret = vec![];
 		let mut buf = String::new();
 		let mut dunhao = false;
 		let mut clear_buf = |buf:&mut String, dunhao| {
 			if dunhao || !buf.is_empty() {
-				ret.push(buf.clone());
+				ret.push(Text_::new(buf.clone()));
 				buf.clear();
 			}
 		};
@@ -341,7 +388,7 @@ pub mod world_ {
 					clear_buf(&mut buf, dunhao);
 				}
 				Keyword_::Text | Keyword_::Code | Keyword_::Lf(_) | Keyword_::Cr(_) | Keyword_::Esc(_) => for2(),
-				Keyword_::Var(_) => buf.push_str(val__(i, qu)?),
+				//Keyword_::Var(_) => buf.push_str(val__(i, qu)?),
 				_ => {
 					//panic!
 					pr__!("err to_vec__ {:?}\n", kw); loop{}
@@ -351,27 +398,93 @@ pub mod world_ {
 		clear_buf(&mut buf, dunhao);
 		Ok(ret)
 	}
+	fn tv_to_civ__(v:Vec<Text_>) -> Vec<CI_> {v.into_iter().map(|i| new_ci__(Box::new(i))).collect()}
 	
-	fn val__<'a>(i:&'a CI_, qu:&'a Qu_) -> Result<&'a str, Return_> {
+	fn val__(i:&CI_, qu:&RwLock<Qu_>, data:&Data_, dbg:&Debug_) -> Result<CI_, Return_> {
 		if let Some(codes2) = i.a__() {
 			let mut data2_mut2 = Data2Mut_::new();
-			let ret2 = z__(&codes2.a_, None, &mut DataMut_::new(), &mut data2_mut2, &mut Qu_::new());
+			let ret2 = z__(&codes2.a_, None, &Data_::new(), &Data2_::new(), &mut DataMut_::new(), &mut data2_mut2, qu, dbg);
 			if ret2 != Return_::Ok {return Err(ret2);}
 			let v = to_vec__(&data2_mut2.ret, qu)?;
 			if !v.is_empty() {
-				let name = &v[0];
-				if let Some(val) = qu.val__(name) {
-					//pr__!("{:?}\n", val);
-					return Ok(&val.s_);
-				} else {return Err(Return_::Err(["var no ", name].concat()))}
+				let name = &v[0].s_;
+				if let Some(a) = &data.argnames {
+					for (idx, name2) in a.iter().enumerate() {
+						if &name2.s_ == name {
+							if idx < data.args.len() {
+								return Ok(data.args[idx].clone());
+							}
+						}
+					}
+				}
+				match name.as_ref() {
+					"参数" => {
+						let mut s = String::new();
+						for i2 in &data.args {
+							if !s.is_empty() {s += " ";}
+							if let Some(s2) = i2.s__() {
+								s += s2;
+							}
+						}
+						return Ok(new_text__(s));
+					}
+					_ => if let Some(val) = l_r__!(qu).val__(name) {
+						//pr__!("{:?}\n", val);
+						return Ok(val.s_.clone());
+					} else {return Err(Return_::Err(["var no ", name].concat()))}
+				}
 			} else {return Err(Return_::Err("var no".to_string()))}
+		} else {return Err(Return_::Err2)}
+	}
+
+	fn find_def__(s:&str, codes:&Vec<CI_>, data:&Data_, data_mut:&mut DataMut_, data2_mut:&mut Data2Mut_, qu:&RwLock<Qu_>, dbg:&Debug_) -> Return_ {
+		let mut idx = 0;
+		let mut old = core::usize::MAX;
+		let mut clear = |mut old, idx| {
+			if old != core::usize::MAX {
+				data2_mut.ret__(s[old..idx].to_string());
+				old = core::usize::MAX;
+			}
+		};
+		while idx < s.len() {
+			if let Some((def, len)) = l_r__!(qu).find_def__(s, idx) {
+				clear(old, idx);
+				idx += len;
+				data_mut.idx += 1;
+				let mut data2_mut2 = Data2Mut_::new();
+				let ret = z__(codes, None, data, &Data2_::new2(true), data_mut, &mut data2_mut2, qu, dbg);
+				if ret != Return_::Ok {return ret}
+				let mut data = Data_::new();
+				match to_vec__(&data2_mut2.ret, qu) {
+					Ok(v) => {
+						data.args = tv_to_civ__(v);
+						data.args.insert(0, new_text__(s[idx..].to_string()));
+						data.argnames = Some(def.argnames_.clone());
+					}
+					Err(ret) => return ret
+				}
+				let ret = z4__(&def.code_, &data, dbg);
+				match ret {
+					Return_::Ok => {}
+					Return_::Ok2(v) => {
+						//data2_mut.ret.append(&mut 
+					}
+					_ => return ret
+				}
+				break;
+			}
+			if old == core::usize::MAX {old = idx;}
+			loop {
+				idx += 1;
+				if s.is_char_boundary(idx) {break}
+			}
 		}
-		Ok("")
+		clear(old, idx);
+		Return_::Ok
 	}
 
 	type ExplRes_ = Result<f64, Return_>;
 	fn expl__(opa:&Vec<expl_::Op_>) -> ExplRes_ {
-		pr__!("{:?}\n", opa);
 		expl_2__(opa, &mut 0)
 	}
 	fn expl_2__(opa:&Vec<expl_::Op_>, idx:&mut usize) -> ExplRes_ {
@@ -425,10 +538,22 @@ pub mod world_ {
 	#[derive(Debug, PartialEq)]
 	enum Return_ {
 		Ok,
+		Ok2(Vec<Text_>),
 		Break(Option<String>),
 		Continue(Option<String>),
 		Exit(i32),
-		Err(String)
+		Err(String),
+		Err2
+	}
+	struct Debug_ {
+		tree:bool,
+	}
+	struct Data_ {
+		args:Vec<CI_>,
+		argnames:Option<Argnames_>,
+	}
+	struct Data2_ {
+		juhao:bool,
 	}
 	struct DataMut_ {
 		idx:usize,
@@ -436,33 +561,65 @@ pub mod world_ {
 	struct Data2Mut_ {
 		ret:Vec<CI_>,
 	}
+	impl Debug_ {
+		fn new() -> Self {Self::new2(false)}
+		fn new2(tree:bool) -> Self {Self {tree}}
+	}
+	impl Data_ {
+		fn new() -> Self {Self::new2(vec![])}
+		fn new2(args:Vec<CI_>) -> Self {Self {args, argnames:None}}
+	}
+	impl Data2_ {
+		fn new() -> Self {Self::new2(false)}
+		fn new2(juhao:bool) -> Self {Self {juhao}}
+	}
 	impl DataMut_ {
 		fn new() -> Self {Self::new2(0)}
 		fn new2(idx:usize) -> Self {Self {idx}}
 	}
 	impl Data2Mut_ {
 		fn new() -> Self {Self {ret:vec![]}}
-		fn ret__(&mut self, s_:String) {
-			self.ret.push(new_ci__(Box::new(Text_ {s_})));
+		fn ret__(&mut self, s:String) {
+			self.ret.push(new_text__(s));
 		}
 	}
 	
 	struct Qu_ {
 		vals_:Vec<Val_>,
+		defs_:Vec<Defv_>,
 	}
 	impl Qu_ {
-		fn new() -> Self {Self {vals_:vec![]}}
+		fn new() -> Self {Self {vals_:vec![], defs_:vec![]}}
 		fn val__(&self, name:&str) -> Option<&Val_> {
 			if let Some(idx) = self.vals_.iter().position(|i| i.name_ == name) {
 				Some(&self.vals_[idx])
 			} else {None}
 		}
-		fn val_to__(&mut self, name_:String, s_:String) {
+		fn val_to__(&mut self, name_:String, s_:CI_) {
 			if let Some(idx) = self.vals_.iter().position(|i| i.name_ == name_) {
 				self.vals_[idx].s_ = s_;
 			} else {
 				self.vals_.push(Val_ {name_, s_});
 			}
+		}
+		fn def_to__(&mut self, name_:String, argnames_:Argnames_, code_:String) {
+			if let Some(idx) = self.defs_.iter().position(|i| i.name_ == name_) {
+				let i = &mut self.defs_[idx];
+				i.argnames_ = argnames_;
+				i.code_ = code_;
+			} else {
+				self.defs_.push(Defv_ {name_, argnames_, code_});
+			}
+		}
+		fn find_def__(&self, s:&str, from:usize) -> Option<(&Defv_, usize)> {
+			let s = &s[from..];
+			for i in &self.defs_ {
+				let name = &i.name_;
+				if s.starts_with(name) {
+					return Some((i, name.len()));
+				}
+			}
+			None
 		}
 	}
 }
@@ -506,6 +663,7 @@ mod pars_ {
 				new_ci__(Box::new(continue_::Item_{a_:None, })),
 				new_ci__(Box::new(switch_::Item_{a_:None, case_:None, op_:None})),
 				new_ci__(Box::new(set_::Item_{names_:None, vals_:None})),
+				new_ci__(Box::new(def_::Item_{names_:None, code_:None})),
 				new_ci__(Box::new(print_::Item_{a_:None, })),
 				new_ci__(Box::new(expl_::Item_{a_:None, })),
 				new_ci__(Box::new(lf_::Item_{})),
@@ -526,13 +684,13 @@ mod pars_ {
 		let mut buf = String::new();
 		let clear_buf = |buf:&mut String, is_text, codes:&mut Vec<CI_>| {
 			if !buf.is_empty() {
-				codes.push(new_ci__(
+				codes.push(
 					if is_text > 0 {
-						Box::new(Text_ {s_:buf.clone()})
+						new_text__(buf.clone())
 					} else {
-						Box::new(Code_ {s_:buf.clone()})
+						new_ci__(Box::new(Code_ {s_:buf.clone()}))
 					}
-				));
+				);
 				buf.clear();
 			}
 		};
@@ -540,7 +698,7 @@ mod pars_ {
 		'l1: loop {
 			if data_mut.idx >= data.cs.len() {break}
 			let i = data.cs[data_mut.idx];
-			//pr__!("({}) {}\n", data_mut.idx, i);
+			//pr__!("({}) {}\n", data_mut.idx, if i <= ' ' {'.'} else {i});
 			for kw2 in
 				if data_mut.is_rem != 0 {&data.kws_rem}
 				else if data_mut.is_text != 0 {&data.kws_text}
@@ -616,7 +774,7 @@ mod pars_ {
 									let mut ret2 = z__(data, data_mut, Data2_ {juhao}, &from1, &mut codes2.a_);
 									//pr__!("{:?} {:?} {:?} {:?} -> ", ret2, from1, from, kw);
 									match from1 {
-										From_::Set => {
+										From_::Set | From_::Def => {
 											if ret2 != Return_::To {
 												ret2 = Return_::Err("set no to".to_string());
 											} else {
@@ -805,6 +963,16 @@ mod pars_ {
 								_ => ret2 = ret
 							}
 						}
+						Keyword_::Def(a) => if let Some((ret, names_, code_)) = for2(a, From2_::Indiff, From_::Def, false, 2) {
+							match ret {
+								Return_::Continue => {
+									codes.push(new_ci__(Box::new(def_::Item_{names_, code_})));
+									ret2 = ret;
+								}
+								Return_::Ok => ret2 = Return_::To,
+								_ => ret2 = ret
+							}
+						}
 						Keyword_::Print(a) => if let Some((ret, a_, None)) = for2(a, From2_::Indiff, From_::Indiff, true, 1) {
 							codes.push(new_ci__(Box::new(print_::Item_{a_})));
 							ret2 = ret
@@ -816,7 +984,7 @@ mod pars_ {
 						Keyword_::Lf(a) => if for2_0(a).is_some() {}
 						Keyword_::Cr(a) => if for2_0(a).is_some() {}
 						Keyword_::Esc(a) => if for2_0(a).is_some() {}
-						Keyword_::Text | Keyword_::Code | Keyword_::Val => {}
+						Keyword_::Text | Keyword_::Code | Keyword_::Val | Keyword_::Defv => {}
 					}
 					match ret2 {
 						Return_::Ok => {}
@@ -863,6 +1031,7 @@ mod pars_ {
 		For,
 		Switch,
 		Set,
+		Def,
 	}
 	#[derive(Debug)]
 	enum From2_ {
@@ -900,26 +1069,50 @@ mod pars_ {
 	}
 }
 
-struct Text_ {s_:String}
+#[derive(Debug, PartialEq)]
+struct Text_ {
+	s_:String,
+	rems_:Option<Vec<String>>,
+}
+impl Text_ {
+	fn new(s:String) -> Self {Self::new2(s, None)}
+	fn new2(s_:String, rems_:Option<Vec<String>>) -> Self {Self {s_, rems_}}
+}
+fn new_text__(s:String) -> CI_ {
+	new_ci__(Box::new(Text_::new(s)))
+}
 impl CodeImpl_ for Text_ {
 	fn kw__(&self) -> Vec<Keyword_> {vec![Keyword_::Text]}
 	fn s__(&self) -> Option<&str> {Some(&self.s_)}
 	fn as_any(&self) -> &dyn Any {self}
 }
+
 struct Code_ {s_:String}
 impl CodeImpl_ for Code_ {
 	fn kw__(&self) -> Vec<Keyword_> {vec![Keyword_::Code]}
 	fn s__(&self) -> Option<&str> {Some(&self.s_)}
 	fn as_any(&self) -> &dyn Any {self}
 }
-#[derive(Debug)]
+
 struct Val_ {
-	s_:String,
+	s_:CI_,
 	name_:String,
 }
 impl CodeImpl_ for Val_ {
 	fn kw__(&self) -> Vec<Keyword_> {vec![Keyword_::Val]}
-	fn s__(&self) -> Option<&str> {Some(&self.s_)}
+	fn s__(&self) -> Option<&str> {Some(&self.name_)}
+	fn as_any(&self) -> &dyn Any {self}
+}
+
+type Argnames_ = Arc<Vec<Text_>>;
+struct Defv_ {
+	name_:String,
+	argnames_:Argnames_,
+	code_:String,
+}
+impl CodeImpl_ for Defv_ {
+	fn kw__(&self) -> Vec<Keyword_> {vec![Keyword_::Defv]}
+	fn s__(&self) -> Option<&str> {Some(&self.name_)}
 	fn as_any(&self) -> &dyn Any {self}
 }
 
@@ -975,6 +1168,12 @@ fn tree2__(codes:&Vec<CI_>, mut suojin:i32, tag:Option<&str>, mut eoe0:bool) {
 						}
 						break;
 					}
+					if let Some(i) = i.as_any().downcast_ref::<def_::Item_>() {
+						if let Some(codes) = &i.code_ {
+							tree2__(&codes.a_, suojin, None, eoe0);
+						}
+						break;
+					}
 					if let Some(i) = i.as_any().downcast_ref::<switch_::Item_>() {
 						if let Some(codes) = &i.case_ {
 							for codes in codes {
@@ -996,6 +1195,7 @@ pub enum Keyword_ {
 	Text,
 	Code,
 	Val,
+	Defv,
 	Juhao(Vec<Vec<char>>),
 	Dunhao(Vec<Vec<char>>),
 	BeginRem(Vec<Vec<char>>),
@@ -1016,6 +1216,7 @@ pub enum Keyword_ {
 	Continue(Vec<Vec<char>>),
 	Switch(Vec<Vec<char>>),
 	Set(Vec<Vec<char>>),
+	Def(Vec<Vec<char>>),
 	Print(Vec<Vec<char>>),
 	Expl(Vec<Vec<char>>),
 	Lf(Vec<Vec<char>>),
@@ -1218,6 +1419,19 @@ mod set_ {
 	}
 	impl CodeImpl_ for Item_ {
 		fn kw__(&self) -> Vec<Keyword_> {vec![Keyword_::Set(vec![vec!['赋', '予', ], vec!['以', ], ])]}
+		fn a__(&self) -> &Option<Codes_> {&self.names_}
+		fn a_tag__(&self) -> Option<&str> {Some("name")}
+
+		fn as_any(&self) -> &dyn Any {self}
+	}
+}
+mod def_ {
+	use super::*;
+	pub struct Item_ {
+		pub names_:Option<Codes_>, pub code_:Option<Codes_>,
+	}
+	impl CodeImpl_ for Item_ {
+		fn kw__(&self) -> Vec<Keyword_> {vec![Keyword_::Def(vec![vec!['定', '义', ], vec!['以', ], ])]}
 		fn a__(&self) -> &Option<Codes_> {&self.names_}
 		fn a_tag__(&self) -> Option<&str> {Some("name")}
 

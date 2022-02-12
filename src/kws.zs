@@ -132,10 +132,15 @@
 		Gt
 	}
 上原样、、1。
-	、Set、““赋予”、“以””、下原样
+	调用‘迭代三’、下代码
+		别名值名以参数3。如果不‘值名’那么赋予值名以vals。
+		、‘参数1’、““‘参数2’”、“以””、下原样
 		fn a__(&self) -> &Option<Codes_> {&self.names_}
 		fn a_tag__(&self) -> Option<&str> {Some("name")}
-上原样、“pub names_:Option<Codes_>, pub vals_:Option<Codes_>,”、“names_:None, vals_:None”2顿、0。
+上原样、“pub names_:Option<Codes_>, pub ‘值名’_:Option<Codes_>,”、“names_:None, ‘值名’_:None”2顿、0。
+	上代码、3、
+	Set、“赋予”、、
+	Def、“定义”、code。
 	调用‘迭代三’、“‘栈’‘、’1”、2、
 		Print、“显示”。
 	、Expl、““算术””、2顿、下原样
@@ -151,6 +156,7 @@
 		EndG,
 		Num(f64),
 		No
+	}
 上原样、、1。
 
 	（先实现成关键字）
@@ -191,6 +197,7 @@ pub enum Keyword_ {
 	Text,
 	Code,
 	Val,
+	Defval,
 ‘2’
 }
 
